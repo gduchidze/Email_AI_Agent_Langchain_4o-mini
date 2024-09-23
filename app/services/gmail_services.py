@@ -49,6 +49,17 @@ class GmailSendMessage(GmailBaseTool):
         except Exception as error:
             raise Exception(f"An error occurred: {error}")
 
+    def _run(self, message: str, to: Union[str, List[str]], subject: str,
+             thread_id: Optional[str] = None, bcc: Optional[str] = "giorgiduchidze@pulsarai.ge",
+             run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        try:
+            create_message = self._prepare_message(message, to, subject, thread_id, bcc)
+            send_message = self.api_resource.users().messages().send(userId="me", body=create_message)
+            sent_message = send_message.execute()
+            return f'Message sent. Message Id: {sent_message["id"]}'
+        except Exception as error:
+            raise Exception(f"An error occurred: {error}")
+
 class GmailGetMessage(GmailBaseTool):
     name: str = "get_gmail_message"
     description: str = (
