@@ -72,8 +72,6 @@ class GiantiEmailAssistant:
                            Thread History:
                            {thread_history}
                         2. Generate an appropriate response based on the entire email thread content and the given instructions.
-                        3. If you cannot respond or the question is irrelevant, return I cannot respond.
-                        4. Format the email cleanly and neatly, with appropriate spacing and structure, resembling a professional email.
                         """
                     }
                     ai_response = self.ai_service.generate_response(input_data)
