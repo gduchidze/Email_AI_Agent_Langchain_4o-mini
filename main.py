@@ -4,7 +4,7 @@ import sys
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional, Union
 from langchain_community.tools.gmail.utils import get_gmail_credentials, build_resource_service
 from app.services.gmail_services import GmailSendMessage
 import asyncio
@@ -36,6 +36,7 @@ class EmailResponse(BaseModel):
     message: str
     to: str
     subject: str
+    cc: Optional[Union[str, List[str]]] = None
 
 
 class GiantiEmailAssistant:
