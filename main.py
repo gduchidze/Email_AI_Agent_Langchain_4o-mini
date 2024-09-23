@@ -72,7 +72,7 @@ class GiantiEmailAssistant:
                            {thread_history}
                         2. Generate an appropriate response based on the entire email thread content and the given instructions.
                         3. If you cannot respond or the question is irrelevant, return I cannot respond.
-                        4. Write a formal email response in a polite and professional tone. Format the following text as an email, with the appropriate salutation, clear paragraphs, and a polite closing statement.
+                        4. Format the email cleanly and neatly, with appropriate spacing and structure, resembling a professional email.
                         """
                     }
                     ai_response = self.ai_service.generate_response(input_data)
