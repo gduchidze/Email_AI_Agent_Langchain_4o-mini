@@ -32,10 +32,7 @@ def mark_as_read(credentials, email_id: str):
 
 def fetch_thread_messages(credentials, thread_id: str) -> List[Dict[str, str]]:
     try:
-        # Build the Gmail service
         service = build('gmail', 'v1', credentials=credentials)
-
-        # Fetch the thread
         thread = service.users().threads().get(userId='me', id=thread_id).execute()
 
         messages = []
