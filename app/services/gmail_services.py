@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Optional, Any, Union, List, Type
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_google_community.gmail.base import GmailBaseTool
@@ -8,30 +9,40 @@ from email.mime.text import MIMEText
 import email
 from langchain_google_community.gmail.utils import clean_email_body
 
+logger = logging.getLogger(__name__)
+
+
 class GmailSendMessage(GmailBaseTool):
     name: str = "send_gmail_message"
     description: str = "Use this tool to send email messages. The input is the message, recipients"
     args_schema: Type[SendMessageSchema] = SendMessageSchema
 
     def _prepare_message(self, message: str, to: Union[str, List[str]], subject: str,
-                         cc: Optional[Union[str, List[str]]] = None,
-                         bcc: Optional[Union[str, List[str]]] = None) -> Dict[str, Any]:
+                         thread_id: Optional[str] = None, bcc: Optional[str] = None) -> Dict[str, Any]:
         mime_message = MIMEMultipart()
         mime_message.attach(MIMEText(message, "html"))
         mime_message["To"] = ", ".join(to if isinstance(to, list) else [to])
         mime_message["Subject"] = subject
-        if cc:
-            mime_message["Cc"] = ", ".join(cc if isinstance(cc, list) else [cc])
         if bcc:
-            mime_message["Bcc"] = ", ".join(bcc if isinstance(bcc, list) else [bcc])
-        return {"raw": base64.urlsafe_b64encode(mime_message.as_bytes()).decode()}
+            mime_message["Bcc"] = bcc
+
+        if thread_id:
+            thread = self.api_resource.users().threads().get(userId="me", id=thread_id).execute()
+            original_message = thread['messages'][0]
+            original_headers = {header['name']: header['value'] for header in original_message['payload']['headers']}
+
+            if 'Message-ID' in original_headers:
+                mime_message["In-Reply-To"] = original_headers['Message-ID']
+                mime_message["References"] = original_headers['Message-ID']
+
+        raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode()
+        return {"raw": raw_message, "threadId": thread_id} if thread_id else {"raw": raw_message}
 
     def _run(self, message: str, to: Union[str, List[str]], subject: str,
-             cc: Optional[Union[str, List[str]]] = None,
-             bcc: Optional[Union[str, List[str]]] = None,
+             thread_id: Optional[str] = None, bcc: Optional[str] = "giorgiduchidze@pulsarai.ge",
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         try:
-            create_message = self._prepare_message(message, to, subject, cc=cc, bcc=bcc)
+            create_message = self._prepare_message(message, to, subject, thread_id, bcc)
             send_message = self.api_resource.users().messages().send(userId="me", body=create_message)
             sent_message = send_message.execute()
             return f'Message sent. Message Id: {sent_message["id"]}'

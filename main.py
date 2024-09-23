@@ -4,7 +4,7 @@ import sys
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Optional, Union
+from typing import List, Dict
 from langchain_community.tools.gmail.utils import get_gmail_credentials, build_resource_service
 from app.services.gmail_services import GmailSendMessage
 import asyncio
@@ -32,11 +32,11 @@ gmail_send_service = GmailSendMessage(api_resource=api_resource)
 chat_history: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
 
 
-class EmailResponse(BaseModel):
+class ReplyEmailResponse(BaseModel):
     message: str
     to: str
     subject: str
-    cc: Optional[Union[str, List[str]]] = None
+    thread_id: str
 
 
 class GiantiEmailAssistant:
@@ -91,18 +91,19 @@ class GiantiEmailAssistant:
                             'sender': 'bot',
                             'content': ai_response
                         })
-                        gmail_send_service.run(
+                        send_message_tool = next(
+                            tool for tool in self.ai_service.tools if isinstance(tool, GmailSendMessage))
+                        send_message_tool.run(
                             message=ai_response,
                             to=email['sender'],
                             subject=f"Re: {email['subject']}",
                             thread_id=thread_id,
-                            cc="giorgiduchidze@pulsarai.ge"
+                            bcc="giorgiduchidze@pulsarai.ge"
                         )
                 except Exception as e:
                     logger.error(f"Error processing email from {email['sender']}: {str(e)}")
             mark_as_read(self.credentials, email['id'])
         logger.info(f"Processed and marked as read: {len(self.unread_emails)} emails.")
-
 
 assistant = GiantiEmailAssistant()
 async def process_emails_periodically():
@@ -143,7 +144,7 @@ async def get_thread_ids():
 
 
 @app.post("/manual_respond/{thread_id}")
-async def manual_respond(thread_id: str, response: EmailResponse):
+async def manual_respond(thread_id: str, response: ReplyEmailResponse):
     if thread_id not in chat_history:
         raise HTTPException(status_code=404, detail="Thread not found")
 
@@ -158,8 +159,7 @@ async def manual_respond(thread_id: str, response: EmailResponse):
             message=response.message,
             to=response.to,
             subject=response.subject,
-            thread_id=thread_id,
-            cc="giorgiduchidze@pulsarai.ge"
+            thread_id=thread_id
         )
         return {"status": "success", "message": "Manual response sent successfully"}
     except Exception as e:

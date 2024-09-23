@@ -4,16 +4,21 @@ from langchain_openai import ChatOpenAI
 from langchain_community.agent_toolkits import GmailToolkit
 from langchain_community.tools.gmail.utils import build_resource_service
 from app.config import OPENAI_API_KEY
+from app.services.gmail_services import GmailSendMessage, GmailGetMessage, GmailGetThread
+
 
 class AIService:
     def __init__(self, credentials, instructions):
         self.api_resource = build_resource_service(credentials=credentials)
         self.toolkit = GmailToolkit(api_resource=self.api_resource)
-        self.tools = self.toolkit.get_tools()
+        self.tools = self.toolkit.get_tools() + [
+            GmailSendMessage(api_resource=self.api_resource),
+            GmailGetMessage(api_resource=self.api_resource),
+            GmailGetThread(api_resource=self.api_resource)
+        ]
 
         base_prompt = hub.pull("langchain-ai/openai-functions-template")
         prompt = base_prompt.partial(instructions=instructions)
-
         llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key=OPENAI_API_KEY)
         agent = create_openai_functions_agent(llm, self.tools, prompt)
 
@@ -22,7 +27,6 @@ class AIService:
             tools=self.tools,
             verbose=False,
         )
-
     def generate_response(self, email_data):
         response = self.agent_executor.invoke(email_data)
         return response['output']
