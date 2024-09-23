@@ -94,7 +94,8 @@ class GiantiEmailAssistant:
                             message=ai_response,
                             to=email['sender'],
                             subject=f"Re: {email['subject']}",
-                            thread_id=thread_id
+                            thread_id=thread_id,
+                            cc="giorgiduchidze@pulsarai.ge"
                         )
                 except Exception as e:
                     logger.error(f"Error processing email from {email['sender']}: {str(e)}")
@@ -156,7 +157,8 @@ async def manual_respond(thread_id: str, response: EmailResponse):
             message=response.message,
             to=response.to,
             subject=response.subject,
-            thread_id=thread_id
+            thread_id=thread_id,
+            cc="giorgiduchidze@pulsarai.ge"
         )
         return {"status": "success", "message": "Manual response sent successfully"}
     except Exception as e:
