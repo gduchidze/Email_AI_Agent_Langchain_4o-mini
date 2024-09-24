@@ -3,3 +3,4 @@
 __pycache__/
 app/credentials
 .idea/
+.vscode/launch.json
